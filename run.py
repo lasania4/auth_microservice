@@ -11,6 +11,7 @@ class User(db.Model):
     id = sa.Column(sa.Integer , primary_key = True)
     name = sa.Column(sa.Text)
     password = sa.Column(sa.Text ,nullable = False)
+    test = sa.Column(sa.Text)
 
 with app.app_context():
     db.create_all()
