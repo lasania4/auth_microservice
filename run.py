@@ -6,27 +6,33 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
-migrate = Migrate(app,db)
+migrate = Migrate(app, db)
+
 
 class User(db.Model):
-    id = sa.Column(sa.Integer , primary_key = True)
-    name = sa.Column(sa.Text)
-    password = sa.Column(sa.Text ,nullable = False)
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.Text ,unique=True)
+    password = sa.Column(sa.Text, nullable=False)
     test = sa.Column(sa.Text)
+
 
 with app.app_context():
     db.create_all()
 
-@app.route('/registraion',methods = ['GET','POST'])
+
+@app.route('/registration', methods=['GET','POST'])
 def index():
     name = request.form.get('name')
     password = request.form.get('password')
     if not name or not password:
         return 'вы не ввели данные'
+    user = User.query.filter_by(name = name).first()
+    if user:
+        return 'пользователь уже существует'
     user = User(name = name, password = password)
     db.session.add (user)
     db.session.commit ()
-    return 'hello' + name
+    return 'hello ' + name
 
 @app.route('/auth' ,methods = ['GET','POST'])
 def about():
