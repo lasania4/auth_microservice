@@ -15,7 +15,6 @@ class User(db.Model):
     name = sa.Column(sa.Text, unique=True)
     password = sa.Column(sa.Text, nullable=False)
     test = sa.Column(sa.Text)
-    posts = db.relationship('Post', backref='author')
 
 
 class Post(db.Model):
@@ -23,6 +22,14 @@ class Post(db.Model):
     title = sa.Column(sa.Text, nullable=False)
     content = sa.Column(sa.Text, nullable=False)
     published_time = sa.Column(sa.DateTime, default=func.now)
+
+
+class Card(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.Text, nullable=False)
+    description = sa.Column(sa.Text)
+    price = sa.Column(sa.Text)
+    is_active = sa.Column(sa.Boolean, default=True)
 
 
 with app.app_context():
@@ -54,6 +61,22 @@ def about():
     if not real_password or password != real_password.password:
         return 'данные не совпадают'
     return 'ok'
+
+
+@app.get('/cards')
+def cards():
+    card = Card(name='imac')
+    db.session.add(card)
+    db.session.commit()
+    cards = Card.query.all()
+    respons = []
+    for el in cards:
+        respons.append({
+            'id': el.id,
+            'name': el.name
+        })
+
+    return respons
 
 
 @app.errorhandler(404)
