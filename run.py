@@ -1,13 +1,18 @@
 import sqlalchemy as sa
 from flask import Flask, request
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+admin = Admin(app, url='/admin')
 
 
 class User(db.Model):
@@ -30,6 +35,22 @@ class Card(db.Model):
     description = sa.Column(sa.Text)
     price = sa.Column(sa.Text)
     is_active = sa.Column(sa.Boolean, default=True)
+
+
+class UserAdminView(ModelView):
+    pass
+
+
+class CardAdminView(ModelView):
+    pass
+
+
+admin.add_view(CardAdminView(Card,db.session))
+
+
+
+admin.add_view(UserAdminView(User,db.session))
+
 
 
 with app.app_context():
@@ -63,11 +84,21 @@ def about():
     return 'ok'
 
 
-@app.get('/cards')
-def cards():
-    card = Card(name='imac')
+@app.post('/card')
+def card():
+    name = request.form.get('name')
+    price = request.form.get('price')
+    description = request.form.get('description')
+    if not name:
+        return 'no such data'
+    card = Card(name=name, price=price, description=description)
     db.session.add(card)
     db.session.commit()
+    return 'ok'
+
+
+@app.get('/cards')
+def cards():
     cards = Card.query.all()
     respons = []
     for el in cards:
@@ -77,6 +108,35 @@ def cards():
         })
 
     return respons
+
+
+@app.patch('/card')
+def update_cards():
+    id = request.form.get('id')
+    name = request.form.get('name')
+    description = request.form.get('description')
+    price = request.form.get('price')
+    if not id:
+        return 'id not found'
+    card = Card.query.filter_by(id=id).first()
+    if not card:
+        return 'card not found'
+    card.name = name if 'name' in request.form else card.name
+    db.session.commit()
+    return 'ok'
+
+
+app.delete('/card')
+
+def delete_card():
+    id = request.form.get('id')
+    if not id:
+        return 'id not found'
+    card = Card.query.filter_by(id=id).first()
+    if not card:
+        return 'card not found'
+    db.session.delete(card)
+    db.session.commit()  
 
 
 @app.errorhandler(404)
