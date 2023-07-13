@@ -134,9 +134,7 @@ def update_cards():
     return 'ok'
 
 
-app.delete('/card')
-
-
+@app.delete('/card')
 def delete_card():
     id = request.form.get('id')
     if not id:
