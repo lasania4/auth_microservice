@@ -63,19 +63,34 @@ with app.app_context():
     db.create_all()
 
 
-@app.route('/registration', methods=['GET', 'POST'])
+@app.post('/registration')
 def index():
     name = request.form.get('name')
     password = request.form.get('password')
     if not name or not password:
-        return 'вы не ввели данные'
+        return {
+            "code": 1,
+            "description": 'вы не ввели данные',
+            "data": {}
+        }
     user = User.query.filter_by(name=name).first()
     if user:
-        return 'пользователь уже существует'
+        return {
+            "code": 2,
+            "description": "пользователь уже существует",
+            "data": {}
+        }
     user = User(name=name, password=password)
     db.session.add(user)
     db.session.commit()
-    return 'hello ' + name
+    return {
+        "code": 0,
+        "description": "ok",
+        "data": {
+            "name": name,
+            "id": user.id
+        }
+    }
 
 
 @app.route('/auth', methods=['GET', 'POST'])
@@ -169,4 +184,4 @@ def page_not_found(e):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
