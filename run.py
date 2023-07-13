@@ -1,16 +1,19 @@
 import sqlalchemy as sa
+import time
 from flask import Flask, request
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
-
+from flask_cors import CORS
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = "verysecret"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+CORS(app)
 
 admin = Admin(app, url='/admin')
 
@@ -37,6 +40,13 @@ class Card(db.Model):
     is_active = sa.Column(sa.Boolean, default=True)
 
 
+class Order(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    card_id = sa.Column(sa.Integer, nullable=False)
+    customer_name = sa.Column(sa.Text, nullable=False)
+    phone_number = sa.Column(sa.Text, nullable=False)
+
+
 class UserAdminView(ModelView):
     pass
 
@@ -45,13 +55,9 @@ class CardAdminView(ModelView):
     pass
 
 
-admin.add_view(CardAdminView(Card,db.session))
+admin.add_view(CardAdminView(Card, db.session))
 
-
-
-admin.add_view(UserAdminView(User,db.session))
-
-
+admin.add_view(UserAdminView(User, db.session))
 
 with app.app_context():
     db.create_all()
@@ -99,15 +105,17 @@ def card():
 
 @app.get('/cards')
 def cards():
-    cards = Card.query.all()
-    respons = []
-    for el in cards:
-        respons.append({
+    all_cards = Card.query.filter_by(is_active=True).all()
+    response = []
+    for el in all_cards:
+        response.append({
             'id': el.id,
-            'name': el.name
+            'name': el.name,
+            'description': el.description,
+            "price": el.price
         })
 
-    return respons
+    return response
 
 
 @app.patch('/card')
@@ -128,6 +136,7 @@ def update_cards():
 
 app.delete('/card')
 
+
 def delete_card():
     id = request.form.get('id')
     if not id:
@@ -136,7 +145,24 @@ def delete_card():
     if not card:
         return 'card not found'
     db.session.delete(card)
-    db.session.commit()  
+    db.session.commit()
+
+
+@app.post("/make_order")
+def make_order():
+    print(request.get_json())
+
+    id_ = request.json.get("id")
+    new_order = Order(
+        card_id=id_,
+        customer_name="Alexey",
+        phone_number="+79992223344"
+    )
+    db.session.add(new_order)
+    db.session.commit()
+    return {
+        "code": 0
+    }
 
 
 @app.errorhandler(404)
